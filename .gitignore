@@ -1,0 +1,74 @@
+# ==========================================
+# 1. ОБЩИЕ НАСТРОЙКИ (Система / IDE / Docker)
+# ==========================================
+# Операционная система
+.DS_Store
+Thumbs.db
+db.doc
+
+# Редакторы кода и IDE
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Локальное окружение и секреты
+# Файлы с реальными паролями не должны попасть в Git!
+.env
+.env.local
+.env.*.local
+*.log
+
+# ==========================================
+# 2. DJANGO (backend_project)
+# ==========================================
+# Байт-код Python
+**/backend_project/__pycache__/
+**/backend_project/*.py[cod]
+**/backend_project/*$py.class
+
+# Виртуальное окружение (если создается внутри папки)
+**/backend_project/env/
+**/backend_project/venv/
+**/backend_project/ENV/
+**/backend_project/.venv/
+
+# Локальная база данных SQLite (для разработки)
+**/backend_project/*.sqlite3
+
+# Статика и медиа-файлы (загрузки пользователей)
+**/backend_project/backend_media/
+**/backend_project/backend_static/
+
+# Разное (Celery, тесты)
+**/backend_project/celerybeat-schedule
+**/backend_project/htmlcov/
+
+# ==========================================
+# 3. REACT (frontend_project)
+# ==========================================
+# Зависимости проекта
+**/frontend_project/node_modules/
+**/frontend_project/.pnp
+**/frontend_project/.pnp.js
+
+# Логи ошибок пакетных менеджеров
+**/frontend_project/npm-debug.log*
+**/frontend_project/yarn-debug.log*
+**/frontend_project/yarn-error.log*
+**/frontend_project/pnpm-debug.log*
+
+# Папки сборки ( Production build )
+# Они соберутся автоматически внутри Docker-контейнера
+**/frontend_project/build/
+**/frontend_project/dist/
+
+# Тесты и покрытие
+**/frontend_project/coverage/
+
+# Кэш TypeScript / Инструментов сборки
+**/frontend_project/tsbuildinfo
+**/frontend_project/.vite/

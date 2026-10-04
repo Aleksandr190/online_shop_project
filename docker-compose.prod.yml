@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  backend:
+    environment:
+      - DEBUG=False
+    volumes:
+      - django_static:/app/backend_static
+      - django_media:/app/backend_media
+
+  frontend:
+    build:
+      context: ./frontend_project
+      dockerfile: Dockerfile.prod
+    ports:
+      - "80:80"
+    volumes:
+      - django_static:/app/backend_static
+      - django_media:/app/backend_media
