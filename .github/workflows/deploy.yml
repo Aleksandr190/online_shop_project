@@ -21,7 +21,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
-            cd /home/${{ secrets.USERNAME }}/online_shop_project
+            cd /root/online_shop_project
             git pull origin main
             echo "${{ secrets.ENV_FILE }}" > .env
             docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
