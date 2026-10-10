@@ -3,7 +3,7 @@ name: Production Deployment
 on:
   push:
     branches:
-      - main
+      - main  # Замените на master, если ваша главная ветка называется так
 
 jobs:
   deploy:
@@ -15,32 +15,32 @@ jobs:
 
       - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          PROD_ENV_DATA: ${{ secrets.ENV_FILE }}
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           envs: PROD_ENV_DATA
-        env:
-          PROD_ENV_DATA: ${{ secrets.ENV_FILE }}
-        script: |
-          # 1. Переходим в папку проекта
-          cd /root/online_shop_project
-          
-          # 2. Скачиваем свежий код
-          git pull origin main
-          
-          # 3. Безопасно записываем .env из переменной окружения
-          echo "$PROD_ENV_DATA" > .env
-          
-          # 4. Пересборка и запуск контейнеров в прод-режиме
-          docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
-          
-          # 5. Миграции БД
-          docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python manage.py migrate --no-input
-          
-          # 6. Сбор статики
-          docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python manage.py collectstatic --no-input
-          
-          # 7. Очистка старых Docker-образов
-          docker image prune -f
+          script: |
+            # 1. Переходим в папку проекта
+            cd /root/online_shop_project
+
+            # 2. Скачиваем свежий код
+            git pull origin main
+
+            # 3. Безопасно записываем .env из переменной окружения
+            echo "$PROD_ENV_DATA" > .env
+
+            # 4. Пересборка и запуск контейнеров в прод-режиме
+            docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+
+            # 5. Миграции БД
+            docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python manage.py migrate --no-input
+
+            # 6. Сбор статики
+            docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python manage.py collectstatic --no-input
+
+            # 7. Очистка старых Docker-образов
+            docker image prune -f
