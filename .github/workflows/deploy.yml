@@ -1,0 +1,45 @@
+name: Production Deployment
+
+# Запуск деплоя происходит автоматически при каждом пуше в ветку main
+on:
+  push:
+    branches:
+      - main  # Если ваша главная ветка называется master, замените на master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Автоматическое подключение к серверу по SSH и выполнение команд
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          script: |
+            # 1. Переходим в папку с проектом на сервере (Укажите ваш реальный путь!)
+            cd /home/${{ secrets.USERNAME }}/online_shop_project
+            
+            # 2. Скачиваем свежий код из гит-репозитория
+            git pull origin main
+            
+            # 3. Обновляем продакшен-файл .env из секретов GitHub
+            echo "${{ secrets.ENV_FILE }}" > .env
+            
+            # 4. Пересобираем и запускаем контейнеры в прод-режиме (Gunicorn + Nginx во фронтенде)
+            docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+            
+            # 5. Применяем миграции базы данных (-T обязателен для работы в скриптах)
+            docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python manage.py migrate --no-input
+            
+            # 6. Собираем статические файлы Django в общий вольюм
+            docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python manage.py collectstatic --no-input
+            
+            # 7. Удаляем старые неиспользуемые Docker-образы, чтобы не забивать диск сервера
+            docker image prune -f
