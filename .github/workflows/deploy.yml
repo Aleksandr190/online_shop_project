@@ -6,13 +6,49 @@ on:
       - main  # Замените на master, если ваша главная ветка называется так
 
 jobs:
-  deploy:
+  # -------------------------------------------------------------------------
+  # ЭТАП 1: CI (Continuous Integration) - Тестирование на серверах GitHub
+  # -------------------------------------------------------------------------
+  run-tests:
     runs-on: ubuntu-24.04
 
     steps:
+      # Скачиваем код репозитория на виртуальный раннер GitHub для тестов
       - name: Checkout code
         uses: actions/checkout@v4.2.2
 
+      # Поднимаем Python нужной версии
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.4'
+
+      # Устанавливаем зависимости бэкенда (включая Django и Gunicorn)
+      - name: Install dependencies
+        run: |
+          cd backend_project
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      # Запускаем тесты (благодаря коду в settings.py они пройдут на SQLite в памяти)
+      - name: Run Django Tests
+        run: |
+          cd backend_project
+          python manage.py test
+
+  # -------------------------------------------------------------------------
+  # ЭТАП 2: CD (Continuous Deployment) - Автоматический деплой на ваш VPS
+  # -------------------------------------------------------------------------
+  deploy:
+    runs-on: ubuntu-24.04
+    needs: run-tests # Деплой запустится только в том случае, если тесты прошли успешно
+
+    steps:
+      # Скачиваем код на раннер перед подключением к SSH
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+
+      # Подключаемся к вашему серверу по SSH и обновляем проект
       - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v1.0.3
         env:
@@ -24,23 +60,23 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           envs: PROD_ENV_DATA
           script: |
-            # 1. Переходим в папку проекта
+            # 1. Переходим в папку проекта на сервере
             cd /root/online_shop_project
-
-            # 2. Скачиваем свежий код
+            
+            # 2. Подтягиваем свежие изменения из коммита
             git pull origin main
-
-            # 3. Безопасно записываем .env из переменной окружения
+            
+            # 3. Безопасно перезаписываем файл .env
             echo "$PROD_ENV_DATA" > .env
-
-            # 4. Пересборка и запуск контейнеров в прод-режиме
+            
+            # 4. Пересобираем и запускаем Docker-контейнеры в проде на Gunicorn
             docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
-
-            # 5. Миграции БД
+            
+            # 5. Накатываем новые миграции БД на проде (без интерактива)
             docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python manage.py migrate --no-input
-
-            # 6. Сбор статики
+            
+            # 6. Собираем статику Django для веб-сервера во фронтенде
             docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python manage.py collectstatic --no-input
-
-            # 7. Очистка старых Docker-образов
+            
+            # 7. Очищаем старые кэшированные Docker-образы, освобождая диск
             docker image prune -f

@@ -25,27 +25,31 @@ db.doc
 # ==========================================
 # 2. DJANGO (backend_project)
 # ==========================================
-# Байт-код Python
-**/backend_project/__pycache__/
-**/backend_project/*.py[cod]
-**/backend_project/*$py.class
 
-# Виртуальное окружение (если создается внутри папки)
-**/backend_project/env/
-**/backend_project/venv/
-**/backend_project/ENV/
-**/backend_project/.venv/
+# 1. Глобальный байт-код Python (блокирует кэш в абсолютно любых папках)
+**/__pycache__/
+__pycache__/
+*.py[cod]
+*$py.class
 
-# Локальная база данных SQLite (для разработки)
-**/backend_project/*.sqlite3
+# 2. Локальные виртуальные окружения (строгие пути от корня проекта)
+backend_project/env/
+backend_project/venv/
+backend_project/ENV/
+backend_project/.venv/
+venv/
+.venv/
 
-# Статика и медиа-файлы (загрузки пользователей)
-**/backend_project/backend_media/
-**/backend_project/backend_static/
+# 3. Базы данных, статика и медиа (строгие пути)
+backend_project/*.sqlite3
+backend_project/backend_media/
+backend_project/backend_static/
 
-# Разное (Celery, тесты)
-**/backend_project/celerybeat-schedule
-**/backend_project/htmlcov/
+# 4. Разное (Celery, логи, отчеты тестов)
+backend_project/celerybeat-schedule
+backend_project/htmlcov/
+.coverage
+.cache
 
 # ==========================================
 # 3. REACT (frontend_project)
