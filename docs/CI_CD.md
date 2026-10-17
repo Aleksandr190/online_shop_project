@@ -118,26 +118,29 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           envs: PROD_ENV_DATA
           script: |
-            # 1. Переходим в папку проекта на сервере
-            cd /root/online_shop_project
-            
-            # 2. Подтягиваем свежие изменения из коммита
-            git pull origin main
-            
-            # 3. Безопасно перезаписываем файл .env
-            echo "$PROD_ENV_DATA" > .env
-            
-            # 4. Пересобираем и запускаем Docker-контейнеры в проде на Gunicorn
-            docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
-            
-            # 5. Накатываем новые миграции БД на проде (без интерактива)
-            docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python manage.py migrate --no-input
-            
-            # 6. Собираем статику Django для веб-сервера во фронтенде
-            docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python manage.py collectstatic --no-input
-            
-            # 7. Очищаем старые кэшированные Docker-образы, освобождая диск
-            docker image prune -f
+             # 1. Переходим в папку проекта на сервере
+             cd /root/online_shop_project
+
+             # 2. Подтягиваем свежие изменения из коммита
+             git pull origin main
+
+             # 3. Безопасно перезаписываем файл .env
+             echo "$PROD_ENV_DATA" > .env
+
+             # 4. Полностью останавливаем и удаляем старые контейнеры, очищая оперативную память Nginx
+             docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
+
+             # 5. Пересобираем и перезапускаем Docker-контейнеры в фоне (гарантирует обновление кода и стилей)
+             docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+             # 6. Накатываем новые миграции БД на проде (без интерактива)
+             docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python manage.py migrate --no-input
+
+             # 7. Собираем статику Django для веб-сервера во фронтенде
+             docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python manage.py collectstatic --no-input
+
+             # 8. Очищаем старые кэшированные Docker-образы, освобождая диск сервера
+             docker image prune -f
 ```
 ## Шаг 4. Изменение setting.py
 

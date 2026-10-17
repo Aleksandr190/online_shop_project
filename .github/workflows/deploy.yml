@@ -88,14 +88,17 @@ jobs:
              # 3. Безопасно перезаписываем файл .env
              echo "$PROD_ENV_DATA" > .env
 
-             # 4. Пересобираем и перезапускаем Docker-контейнеры в фоне (гарантирует обновление кода и стилей)
+             # 4. Полностью останавливаем и удаляем старые контейнеры, очищая оперативную память Nginx
+             docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
+
+             # 5. Пересобираем и перезапускаем Docker-контейнеры в фоне (гарантирует обновление кода и стилей)
              docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
-             # 5. Накатываем новые миграции БД на проде (без интерактива)
+             # 6. Накатываем новые миграции БД на проде (без интерактива)
              docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python manage.py migrate --no-input
 
-             # 6. Собираем статику Django для веб-сервера во фронтенде
+             # 7. Собираем статику Django для веб-сервера во фронтенде
              docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python manage.py collectstatic --no-input
 
-             # 7. Очищаем старые кэшированные Docker-образы, освобождая диск сервера
+             # 8. Очищаем старые кэшированные Docker-образы, освобождая диск сервера
              docker image prune -f
