@@ -42,18 +42,71 @@ name: Production Deployment
 on:
   push:
     branches:
-      - main  # Скрипт сработает автоматически при пуше в ветку main
+      - main  # Замените на master, если ваша главная ветка называется так
 
 jobs:
-  deploy:
+  # -------------------------------------------------------------------------
+  # ЭТАП 1: CI (Continuous Integration) - Тестирование на серверах GitHub
+  # -------------------------------------------------------------------------
+  run-tests:
     runs-on: ubuntu-24.04
 
     steps:
-      # Шаг 1: Скачиваем свежий код репозитория на виртуальный раннер GitHub
+      # Скачиваем код репозитория на виртуальный раннер GitHub для тестов
       - name: Checkout code
         uses: actions/checkout@v4.2.2
 
-      # Шаг 2: Автоматически подключаемся по SSH и обновляем проект на сервере
+      # Поднимаем Python нужной версии
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.4'
+
+      # Устанавливаем зависимости бэкенда (включая Django и Gunicorn)
+      - name: Install dependencies
+        run: |
+          cd backend_project
+          python -m pip install --upgrade pip
+          pip install flake8
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      # Этап статического анализа кода бэкенда на ошибки и стиль PEP 8
+      # --count: выведет количество ошибок
+      # --select=E9,F63,F7,F82: найдет критические синтаксические ошибки (логика упадет)
+      # --show-source: покажет строку с ошибкой в логах GitHub
+      # Нарушения стиля оформления кода (длина строк, пробелы) — не роняют пайплайн, но выводят статистику
+      - name: Lint Python code with flake8
+        run: |
+          cd backend_project
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127
+
+      # Создаем временный .env файл из шаблона для успешного запуска тестов Django
+      - name: Create env file for tests
+        run: |
+          cp .env.example .env
+          echo "SECRET_KEY=test_secret_key_for_ci_cd" >> .env
+          echo "DEBUG=True" >> .env
+
+      # Запускаем тесты (благодаря коду в settings.py они пройдут на SQLite в памяти)
+      - name: Run Django Tests
+        run: |
+          cd backend_project
+          python manage.py test
+
+  # -------------------------------------------------------------------------
+  # ЭТАП 2: CD (Continuous Deployment) - Автоматический деплой на ваш VPS
+  # -------------------------------------------------------------------------
+  deploy:
+    runs-on: ubuntu-24.04
+    needs: run-tests # Деплой запустится только в том случае, если тесты прошли успешно
+
+    steps:
+      # Скачиваем код на раннер перед подключением к SSH
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+
+      # Подключаемся к вашему серверу по SSH и обновляем проект
       - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v1.0.3
         env:
@@ -65,28 +118,27 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           envs: PROD_ENV_DATA
           script: |
-            # 1. Переходим в папку проекта на сервере (замените путь на ваш актуальный результат команды 'pwd')
+            # 1. Переходим в папку проекта на сервере
             cd /root/online_shop_project
             
-            # 2. Скачиваем последние изменения из репозитория
+            # 2. Подтягиваем свежие изменения из коммита
             git pull origin main
             
-            # 3. Безопасно перезаписываем .env файл, экранируя спецсимволы через переменную окружения
+            # 3. Безопасно перезаписываем файл .env
             echo "$PROD_ENV_DATA" > .env
             
-            # 4. Пересобираем и запускаем контейнеры в прод-режиме (Django на Gunicorn)
+            # 4. Пересобираем и запускаем Docker-контейнеры в проде на Gunicorn
             docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
             
-            # 5. Применяем миграции базы данных (-T отключает интерактивный терминал, предотвращая ошибку TTY)
+            # 5. Накатываем новые миграции БД на проде (без интерактива)
             docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python manage.py migrate --no-input
             
-            # 6. Собираем статические файлы Django в общий вольюм для фронтенда
+            # 6. Собираем статику Django для веб-сервера во фронтенде
             docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python manage.py collectstatic --no-input
             
-            # 7. Очищаем неиспользуемые старые Docker-образы для экономии диска сервера
+            # 7. Очищаем старые кэшированные Docker-образы, освобождая диск
             docker image prune -f
 ```
-
 ## Шаг 4. Изменение setting.py
 
 Скопируйте следующий код в \backend_project\core\settings.py. Когда GitHub Actions запускает тесты, ему не нужно поднимать тяжелую базу данных PostgreSQL. Для этого используется легковесная sqlite3.
@@ -97,7 +149,6 @@ if 'test' in sys.argv:
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': ':memory:',  # База данных будет создана прямо в оперативной памяти раннера
     }
-
 ```
 
 ## Шаг 4. Пуш изменений и автоматический запуск
