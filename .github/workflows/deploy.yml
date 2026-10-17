@@ -28,7 +28,19 @@ jobs:
         run: |
           cd backend_project
           python -m pip install --upgrade pip
+          pip install flake8
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      # Этап статического анализа кода бэкенда на ошибки и стиль PEP 8
+      # --count: выведет количество ошибок
+      # --select=E9,F63,F7,F82: найдет критические синтаксические ошибки (логика упадет)
+      # --show-source: покажет строку с ошибкой в логах GitHub
+      # Нарушения стиля оформления кода (длина строк, пробелы) — не роняют пайплайн, но выводят статистику
+      - name: Lint Python code with flake8
+        run: |
+          cd backend_project
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127
 
       # Создаем временный .env файл из шаблона для успешного запуска тестов Django
       - name: Create env file for tests
