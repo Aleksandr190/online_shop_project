@@ -121,26 +121,30 @@ jobs:
             # 1. Переходим в папку проекта на сервере
             cd /root/online_shop_project
             
-            # 2. Сбрасываем кэш Git на сервере и принудительно подтягиваем чистый код из GitHub
-            git fetch origin main
-            git reset --hard origin main
+            # 2. Сбрасываем локальные изменения и удаляем файлы, созданные прошлым деплоем (например, старый .env)
+            git reset --hard
+            git clean -fd
             
-            # 3. Безопасно перезаписываем файл .env
+            # 3. Принудительно подтягиваем чистый код из GitHub (используем правильный синтаксис со слэшем)
+            git fetch origin main
+            git reset --hard origin/main
+            
+            # 4. Безопасно перезаписываем файл .env
             echo "$PROD_ENV_DATA" > .env
 
-            # 4. Удаляем старые контейнеры, очищая оперативную память веб-сервера
+            # 5. Удаляем старые контейнеры, очищая оперативную память веб-сервера
             docker compose -f docker-compose.yml -f docker-compose.prod.yml down
 
-            # 5. Собираем новые образы и запускаем новые контейнеры с нуля (гарантирует обновление стилей)
+            # 6. Собираем новые образы и запускаем новые контейнеры с нуля (гарантирует обновление стилей)
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
    
-            # 6. Накатываем новые миграции БД на проде (без интерактива)
+            # 7. Накатываем новые миграции БД на проде (без интерактива)
             docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python manage.py migrate --no-input
             
-            # 7. Заново собираем чистую статику Django для веб-сервера во фронтенде
+            # 8. Заново собираем чистую статику Django для веб-сервера во фронтенде
             docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python manage.py collectstatic --no-input
             
-            # 8. Очищаем старые кэшированные Docker-образы, освобождая диск сервера
+            # 9. Очищаем старые кэшированные Docker-образы, освобождая диск сервера
             docker image prune -f
 ```
 ## Шаг 4. Изменение setting.py
