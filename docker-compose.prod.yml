@@ -1,19 +1,19 @@
-version: '3.8'
+version: '3.8' # Версия синтаксиса спецификации Docker Compose
 
-services:
-  backend:
-    volumes:
-      - django_static:/app/backend_static
-      - django_media:/app/backend_media
-    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000 --workers 3
-    ports: []
+services: # Начало блока описания production-контейнеров
+  backend: # Настройка production-сервиса бэкенда (Django)
+    volumes: # Подключения постоянных дисковых томов (хранилищ)
+      - django_static:/app/backend_static # Общий том, куда Django сложит статику при сборке
+      - django_media:/app/backend_media  # Общий том, откуда будут читаться загруженные пользователями медиа-файлы
+    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000 --workers 3 # Этап запуска Django через быстрый WSGI-сервер Gunicorn (в 3 параллельных процесса)
+    ports: [] # Порты пусты: бэкенд полностью скрыт от интернета, запросы к нему пойдут только внутри сети Docker
 
-  frontend:
-    build:
-      context: ./frontend_project
-      dockerfile: Dockerfile.prod
-    ports:
-      - "80:80"
-    volumes:
-      - django_static:/app/backend_static
-      - django_media:/app/backend_media
+  frontend: # Настройка production-сервиса фронтенда (React + Nginx)
+    build: # Этап сборки оптимизированного образа
+      context: ./frontend_project # Путь к исходникам фронтенда для сборки статики
+      dockerfile: Dockerfile.prod # Использование Dockerfile продакшна (компиляция в HTML/JS + Nginx)
+    ports: # Этап публикации приложения в глобальную сеть
+      - "80:80" # Открытие стандартного веб-порта (HTTP) для реальных пользователей сайта
+    volumes: # Этап подключения тех же общих томов, что и у бэкенда
+      - django_static:/app/backend_static # Подключаем папку со статикой Django напрямую в контейнер фронтенда
+      - django_media:/app/backend_media # Подключаем папку с медиафайлами Django напрямую в контейнер фронтенда

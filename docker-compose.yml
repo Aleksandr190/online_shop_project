@@ -1,31 +1,31 @@
-version: '3.8'
+version: '3.8' # Версия синтаксиса спецификации Docker Compose
 
-services:
-  db:
-    image: postgres:15-alpine
-    volumes:
-      - pg_catalog_data:/var/lib/postgresql/data
-    env_file:
-      - .env   
-    ports:
-      - "5432:5432"
+services: # Начало блока описания контейнеров (сервисов) проекта
+  db: # Сервис реляционной базы данных PostgreSQL
+    image: postgres:15-alpine # Готовый легковесный образ Postgres из Docker Hub
+    volumes: # Синхронизация папок базы данных
+      - pg_catalog_data:/var/lib/postgresql/data # «проброс» реального хранилища pg_catalog_data внутрь контейнера по адресу /var/lib/postgresql/data
+    env_file: # Подключение файла с переменными окружения
+      - .env # Загрузка настроек БД Postgres (имя БД, пользователь, пароль) из локального .env
+    ports: # Проброс портов базы данных
+      - "5432:5432" # Открытие порта 5432 для подключения к БД через GUI-клиенты
 
-  backend:
-    build: ./backend_project
-    volumes:
-      - ./backend_project:/app
-    ports:
-      - "8000:8000"
-    env_file:
-    - .env
-    depends_on:
-      - db
+  backend: # Сервис бэкенда на Django / Django REST Framework
+    build: ./backend_project # Путь к папке, где Docker найдет Dockerfile для сборки бэкенда
+    volumes: # Синхронизация папок кода
+      - ./backend_project:/app # Привязка кода бэкенда для автоперезапуска Django при правках (на лету)
+    ports: # Проброс портов веб-сервера бэкенда
+      - "8000:8000" # Открытие порта 8000 для обращения к API из локального браузера
+    env_file: # Подключение файла с переменными окружения
+    - .env # Передача секретных ключей и доступов к БД внутрь Django
+    depends_on: # Настройка порядка запуска контейнеров
+      - db # Запуск бэкенда строго после того, как поднимется контейнер базы данных `db`
 
-  frontend:
-    depends_on:
-      - backend
+  frontend: # Сервис фронтенда (React + Vite)
+    depends_on: # Настройка порядка запуска контейнеров
+      - backend # Запуск фронтенда только после успешного старта бэкенда
 
-volumes:
-  pg_catalog_data:
-  django_static:
-  django_media:
+volumes:  # Инициализация именованных хранилищ (томов)
+  pg_catalog_data: # Постоянный том для сохранения данных базы PostgreSQL
+  django_static: # Изолированный том для сбора статики (CSS/JS) Django
+  django_media: # Изолированный том для загружаемых пользователями медиа-файлов

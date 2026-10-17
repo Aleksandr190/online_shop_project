@@ -30,6 +30,14 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
+      # Создаем временный .env файл из шаблона для успешного запуска тестов Django
+      - name: Create env file for tests
+        run: |
+          cd backend_project
+          cp .env.example .env
+          echo "SECRET_KEY=test_secret_key_for_ci_cd" >> .env
+          echo "DEBUG=True" >> .env
+
       # Запускаем тесты (благодаря коду в settings.py они пройдут на SQLite в памяти)
       - name: Run Django Tests
         run: |

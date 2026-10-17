@@ -1,14 +1,14 @@
-version: '3.8'
+version: '3.8' # Версия синтаксиса спецификации Docker Compose
 
-services:
-  frontend:
-    build:
-      context: ./frontend_project
-      dockerfile: Dockerfile.dev
-    volumes:
-      - ./frontend_project:/app
-      - /app/node_modules
-    ports:
-      - "5173:5173"
-    stdin_open: true
-    tty: true
+services:  # Начало блока описания контейнеров (сервисов) проекта
+  frontend: # Название сервиса для фронтенд-приложения
+    build: # Настройка сборки образа
+      context: ./frontend_project # указывает Docker путь к папке на компьютере, внутри которой лежат исходный код фронтенда
+      dockerfile: Dockerfile.dev # Использование Dockerfile для локальной разработки
+    volumes: # Настройка синхронизации файлов (директорий)
+      - ./frontend_project:/app # Монтирование кода(синхронизация папок) с компьютера для автообновления в Vite
+      - /app/node_modules # Изоляция Node-зависимостей внутри контейнера(чтобы не произошло затирание при монтировании)
+    ports: # Проброса сетевых портов
+      - "5173:5173" # Открытие порта Vite (5173) для локального браузера
+    stdin_open: true # Активация ввода (STDIN) для стабильной работы Node.js
+    tty: true # Эмуляция терминала для цветных логов сервера разработки( для более удобной отладки)
