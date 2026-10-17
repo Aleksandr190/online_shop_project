@@ -127,8 +127,8 @@ jobs:
              # 3. Безопасно перезаписываем файл .env
              echo "$PROD_ENV_DATA" > .env
 
-             # 4. Полностью останавливаем и удаляем старые контейнеры, очищая оперативную память Nginx
-             docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
+             # 4. Останавливаем контейнеры и принудительно удаляем старые волиумы статики (БД не сотрется, так как она в pg_catalog_data)
+             docker-compose -f docker-compose.yml -f docker-compose.prod.yml down -v
 
              # 5. Пересобираем и перезапускаем Docker-контейнеры в фоне (гарантирует обновление кода и стилей)
              docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
