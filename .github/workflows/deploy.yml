@@ -79,7 +79,7 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           envs: PROD_ENV_DATA
           script: |
-            # 1. Переходим в папку проекта на сервере
+           # 1. Переходим в папку проекта на сервере
             cd /root/online_shop_project
             
             # 2. Сбрасываем кэш Git на сервере и принудительно подтягиваем чистый код из GitHub
@@ -89,17 +89,17 @@ jobs:
             # 3. Безопасно перезаписываем файл .env
             echo "$PROD_ENV_DATA" > .env
 
-            # 4. Удаляем старые контейнеры и очищаем волиумы от старых файлов кэша и CSS
-            docker-compose -f docker-compose.yml -f docker-compose.prod.yml down -v
+            # 4. Удаляем старые контейнеры, очищая оперативную память веб-сервера
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml down
 
-            # 5. Собираем новые образы и запускаем новые контейнеры с нуля
-            docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+            # 5. Собираем новые образы и запускаем новые контейнеры с нуля (гарантирует обновление стилей)
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
    
             # 6. Накатываем новые миграции БД на проде (без интерактива)
-            docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python manage.py migrate --no-input
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python manage.py migrate --no-input
             
-            # 7. Заново собираем чистую статику Django для веб-сервера
-            docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python manage.py collectstatic --no-input
+            # 7. Заново собираем чистую статику Django для веб-сервера во фронтенде
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python manage.py collectstatic --no-input
             
             # 8. Очищаем старые кэшированные Docker-образы, освобождая диск сервера
             docker image prune -f
