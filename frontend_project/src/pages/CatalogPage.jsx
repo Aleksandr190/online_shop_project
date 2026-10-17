@@ -48,7 +48,7 @@ export const CatalogPage = () => {
       
       {/* Проверка: если в базе вообще нет товаров */}
       {products.length === 0 ? (
-        <p style={styles.center}>В магазине пока нет товаров.</p>
+        <p style={styles.center}>В магазине пока нет товаров!!!</p>
       ) : (
         // Сетка для вывода карточек
         <div style={styles.grid}>
