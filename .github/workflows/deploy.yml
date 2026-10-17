@@ -87,15 +87,18 @@ jobs:
             
             # 3. Безопасно перезаписываем файл .env
             echo "$PROD_ENV_DATA" > .env
+
+            # 4. Принудительно собирает новые образы с нуля, полностью игнорируя старый кэш
+            docker-compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache
+
+            # 5. Перезапускает контейнеры на основе только что собранных СВЕЖИХ образов
+            docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
             
-            # 4. Пересобираем и запускаем Docker-контейнеры в проде на Gunicorn
-            docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
-            
-            # 5. Накатываем новые миграции БД на проде (без интерактива)
+            # 6. Накатываем новые миграции БД на проде (без интерактива)
             docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python manage.py migrate --no-input
             
-            # 6. Собираем статику Django для веб-сервера во фронтенде
+            # 7. Собираем статику Django для веб-сервера во фронтенде
             docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python manage.py collectstatic --no-input
             
-            # 7. Очищаем старые кэшированные Docker-образы, освобождая диск
+            # 8. Очищаем старые кэшированные Docker-образы, освобождая диск
             docker image prune -f
