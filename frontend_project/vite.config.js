@@ -6,6 +6,10 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
+    watch: {
+      usePolling: true, // ХОТ-ФИКС: заставляет Vite вручную проверять файлы в Docker
+      interval: 100,    // опрашивать каждые 100 мс
+    },
     proxy: {
       '/api': {
         target: 'http://backend:8000', 
