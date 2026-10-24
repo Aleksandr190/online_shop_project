@@ -62,7 +62,7 @@ const [settings, setSettings] = useState({ site_name: 'Загрузка...', pho
 
 const styles = {
  header: {
-  backgroundColor: '#640a0a',
+  backgroundColor: '#29a71da1',
   color: '#ffffff',
   padding: '15px 0',
   boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
