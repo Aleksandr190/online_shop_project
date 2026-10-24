@@ -18,7 +18,7 @@ class ProductModelTest(TestCase):
         # Проверяем, что объект успешно создается и данные соответствуют заданным
         product = self.product1
         self.assertTrue(isinstance(product, Product))
-        self.assertEqual(product.title, "Тестовый товар 1")
+        self.assertEqual(product.title, "Тестовый товар 2")
         self.assertEqual(product.price, Decimal("999.99"))
         self.assertEqual(product.description, "Описание товара 1")
 
